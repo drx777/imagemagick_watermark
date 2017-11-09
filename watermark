@@ -1,0 +1,57 @@
+#!/bin/bash
+
+## AUTHOR/LICENSE
+# (c) 2017 David Rekowski <david@rekowski.info>
+# MIT LICENSE
+
+## CREDIT
+# http://www.imagemagick.org/discourse-server/viewtopic.php?t=21856
+# http://www.imagemagick.org/Usage/annotating
+# https://unix.stackexchange.com/questions/89712/bash-float-to-integer
+# https://unix.stackexchange.com/questions/40786/how-to-do-integer-float-calculations-in-bash-or-other-languages-frameworks (NOT!)
+ 
+## CONSTANTS
+SCALE=.15
+OFFSETX=60
+OFFSETY=30
+OPACITY=50
+GRAVITY=SouthEast
+
+## NOTES
+# - fraction is determined in convert -format, might as well be done later
+
+## SCRIPT EXECUTION
+if [ "$#" -ne 3 ]; then
+    echo "Usage: watermark [watermark file] [source file] [output file]";
+    exit 1
+fi
+
+# make arguments readable
+WM=$1
+IMG=$2
+OUT=$3
+
+# determine fraction of width and height of source image
+ww=`convert "$IMG" -format "%[fx:$SCALE*w]" info:`
+hh=`convert "$IMG" -format "%[fx:$SCALE*h]" info:`
+# drop decimal place
+ww=${ww%.*}
+hh=${hh%.*}
+
+# determine wider side
+if [ "$ww" -gt "$hh" ]; then
+    WIDE=$ww
+else
+    WIDE=$hh
+fi
+
+# create watermarked image
+# - dissolve = apply semi transparency to watermark
+# - gravity = put watermark in desired corner resized to 
+# - geometry = set padding to image border
+composite \
+   -dissolve $OPACITY% \
+   -gravity $GRAVITY \( "$WM" -resize $WIDEx$WIDE \) \
+   -geometry +$OFFSETX+$OFFSETY \
+   "$IMG" \
+   "$OUT"
